@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name='graph_search',
@@ -10,6 +10,6 @@ setup(
     # url='none_yet',
     license='../../LICENSE',
     description='Implementation of graph search algorithms',
-    long_description=open('README.txt').read(),
+    long_description=open('README.md').read(),
     install_requires=[],
 )
