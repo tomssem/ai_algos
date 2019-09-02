@@ -12,6 +12,7 @@ class AbstractGraph(abc.ABC):
     graphs.
 
     Defines::
+     vertices
      load
      save
      children_of
@@ -19,6 +20,13 @@ class AbstractGraph(abc.ABC):
      edges_from
      edges_to
     """
+
+    @abc.abstractproperty
+    def vertices(self):
+        """
+        Return a list of all vertices
+        :rtype: List[int]
+        """
 
     @abc.abstractmethod
     def save(self, path):
