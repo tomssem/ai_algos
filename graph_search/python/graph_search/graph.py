@@ -6,13 +6,14 @@ import abc
 
 class AbstractGraph(abc.ABC):
     """
-    Abstract base class for all graph objects.
+    Abstract base class for all graph objects. This is an immutable data structure
     Nodes are represented by integers, and edges as tuples of `(vertex_from, vertex_to, weight)`,
     where weight is a float representing the weight of the edge (this will be 1 in unweighted
     graphs.
 
     Defines::
      vertices
+     edges
      load
      save
      children_of
@@ -26,6 +27,26 @@ class AbstractGraph(abc.ABC):
         """
         Return a list of all vertices
         :rtype: List[int]
+        """
+
+    @abc.abstractproperty
+    def edges(self):
+        """
+        Return a list of all edges
+        :rtype: List[(int, int, weight)]
+        """
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        """
+        Add an edge from `vertex_from` to `vertex_to` with weight `weight` (default value: 1).
+        Behaviour may change based on whether this is a directed graph or an undirected graph
+        (see implementing subclass).
+        If the vertices are not present in the graph they will be added
+        Returns a new graph (since this is an immutable graph)
+        :param vertex_from: the vertex this edge leaves
+        :param vertex_to: the vertex this edge enters
+        :param weight: the weight of this vertex
         """
 
     @abc.abstractmethod
@@ -100,3 +121,23 @@ class UndirectedGraph(AbstractGraph):
         Checks that this graph is indeed undirected
         :raises GraphInvariantError
         """
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        """
+        Add an edge from `vertex_from` to `vertex_to` with weight `weight` (default value: 1).
+        This will essentially add two edges `(vertex_from, vertex_to, weight)` and
+        `(vertex_to, vertex_from, weight)`
+        Returns a new graph (since this is an immutable graph)
+        :param vertex_from: the vertex this edge leaves
+        :param vertex_to: the vertex this edge enters
+        :param weight: the weight of this vertex
+        """
+
+class UndirectedEdgeListGraph(UndirectedGraph):
+    """
+    Undirected graph that is represented using an edge list
+    """
+
+    def __init__(self):
+        self._edge_list = []
