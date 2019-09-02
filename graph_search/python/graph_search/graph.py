@@ -80,3 +80,23 @@ class AbstractGraph(abc.ABC):
         :returns: A list of all edges into this node [(vertex_out, vertex_in, weight)]
         :rtype: List[Tuple[int, int, float]]
         """
+
+class GraphInvariantViolationException(Exception):
+    """
+    Raised when graph is found to be in violation of its invariants
+    """
+
+class UndirectedGraph(AbstractGraph):
+    """
+    Class that represents an undirected graph.
+
+    Defines::
+     validate_undirectedness
+    """
+
+    @abc.abstractmethod
+    def validate_undirectedness(self):
+        """
+        Checks that this graph is indeed undirected
+        :raises GraphInvariantError
+        """
