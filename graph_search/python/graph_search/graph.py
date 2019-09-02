@@ -3,6 +3,7 @@ Data structures for representing graphs
 """
 
 import abc
+import copy
 
 class AbstractGraph(abc.ABC):
     """
@@ -141,3 +142,37 @@ class UndirectedEdgeListGraph(UndirectedGraph):
 
     def __init__(self):
         self._edge_list = []
+        self._vertices = []
+
+    def validate_undirectedness(self):
+        pass
+
+    @property
+    def vertices(self):
+        return copy.copy(self._vertices)
+
+    @property
+    def edges(self):
+        return copy.copy(self._edge_list)
+
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        pass
+
+    def save(self, path):
+        pass
+
+    @classmethod
+    def load(cls, path):
+        pass
+
+    def children_of(self, vertex):
+        pass
+
+    def parents_of(self, vertex):
+        pass
+
+    def edges_from(self, vertex):
+        pass
+
+    def edges_to(self, vertex):
+        pass
