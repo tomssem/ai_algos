@@ -156,7 +156,10 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         return copy.copy(self._edge_list)
 
     def add_edge(self, vertex_from, vertex_to, weight=1):
-        pass
+        self._edge_list.append((vertex_from, vertex_to, weight))
+        self._edge_list.append((vertex_to, vertex_from, weight))
+        self._vertices.extend([vertex_from, vertex_to])
+        self.validate_undirectedness()
 
     def save(self, path):
         pass
