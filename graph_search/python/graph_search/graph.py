@@ -115,8 +115,8 @@ class UndirectedEdgeListGraph(UndirectedGraph):
     """
 
     def __init__(self):
-        self._edge_list = []
-        self._vertices = []
+        self._edge_list = set()
+        self._vertices = set()
 
     def validate_undirectedness(self):
         cnt = collections.Counter()
@@ -136,10 +136,9 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         return copy.copy(self._edge_list)
 
     def add_edge(self, vertex_from, vertex_to, weight=1):
-        self._edge_list.append((vertex_from, vertex_to, weight))
-        self._edge_list.append((vertex_to, vertex_from, weight))
-        self._vertices.extend([vertex_from, vertex_to])
-        self.validate_undirectedness()
+        self._edge_list.add((vertex_from, vertex_to, weight))
+        self._edge_list.add((vertex_to, vertex_from, weight))
+        self._vertices.update([vertex_from, vertex_to])
 
     def children_of(self, vertex):
         pass
