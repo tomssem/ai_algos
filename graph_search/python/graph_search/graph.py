@@ -82,6 +82,11 @@ class GraphInvariantViolationException(Exception):
     Raised when graph is found to be in violation of its invariants
     """
 
+class VertexNotFoundException(Exception):
+    """
+    Raised when a requested vertex is not on the graph
+    """
+
 class UndirectedGraph(AbstractGraph):
     """
     Class that represents an undirected graph.
@@ -120,7 +125,7 @@ class UndirectedEdgeListGraph(UndirectedGraph):
 
     def validate_undirectedness(self):
         cnt = collections.Counter()
-        for (vertex_in, vertex_out, _) in self.edges:
+        for (vertex_in, vertex_out, _) in self._edge_list:
             cnt[(vertex_in, vertex_out)] += 1
             cnt[(vertex_out, vertex_in)] += 1
 
@@ -139,9 +144,18 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._edge_list.add((vertex_from, vertex_to, weight))
         self._edge_list.add((vertex_to, vertex_from, weight))
         self._vertices.update([vertex_from, vertex_to])
+        self.validate_undirectedness()
 
     def children_of(self, vertex):
-        pass
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
+
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_from == vertex:
+                results.append((vertex_to, weight))
+
+        return results
 
     def parents_of(self, vertex):
         pass

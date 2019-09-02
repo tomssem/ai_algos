@@ -98,9 +98,19 @@ class TestUndirectedEdgeListGraph:
         add_edges_test(edges, self.graph)
 
     def test_add_many_edges(self):
+        random.seed(1000003)
         edges = []
         for _ in range(3000):
             edges.append((random.randint(0, 10000),
                           random.randint(0, 10000),
                           random.uniform(0, 10000)))
         add_edges_test(edges, self.graph)
+
+    def test_can_children_of_simple(self):
+        vertex_from = 1
+        vertex_to = 2
+        weight = 3.14
+        self.graph.add_edge(vertex_from, vertex_to, weight)
+
+        assert [(vertex_to, weight)] == self.graph.children_of(vertex_from)
+        assert [(vertex_from, weight)] == self.graph.children_of(vertex_to)
