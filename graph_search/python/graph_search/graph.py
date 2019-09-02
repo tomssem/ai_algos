@@ -3,6 +3,7 @@ Data structures for representing graphs
 """
 
 import abc
+import collections
 import copy
 
 class AbstractGraph(abc.ABC):
@@ -118,7 +119,13 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._vertices = []
 
     def validate_undirectedness(self):
-        pass
+        cnt = collections.Counter()
+        for (vertex_in, vertex_out, _) in self.edges:
+            cnt[(vertex_in, vertex_out)] += 1
+            cnt[(vertex_out, vertex_in)] += 1
+
+        if not all([v == 2 for v in cnt.values()]):
+            raise GraphInvariantViolationException("Not undirected graph")
 
     @property
     def vertices(self):

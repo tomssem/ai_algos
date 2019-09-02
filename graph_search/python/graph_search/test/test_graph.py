@@ -54,3 +54,13 @@ class TestUndirectedEdgeListGraph:
         assert (vertex_to, vertex_from, 1) in actual_edges
 
         check_undirected_graph_variants(graph)
+
+    def test_cath_undirectedness_violatiosn(self):
+        graph = UndirectedEdgeListGraph()
+
+        graph._edge_list.append((1, 2, 3))
+
+        with pytest.raises(GraphInvariantViolationException) as excinfo:
+            graph.validate_undirectedness()
+
+        assert "undirected" in str(excinfo.value)
