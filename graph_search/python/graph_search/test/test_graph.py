@@ -34,3 +34,23 @@ class TestUndirectedEdgeListGraph:
         assert (vertex_to, vertex_from, weight) in actual_edges
 
         check_undirected_graph_variants(graph)
+
+    def test_can_add_an_unweighted_edge(self):
+        graph = UndirectedEdgeListGraph()
+
+        vertex_from = 1
+        vertex_to = 2
+
+        graph.add_edge(vertex_from, vertex_to)
+
+        actual_vertices = graph.vertices
+        assert len(actual_vertices) == 2
+        assert vertex_from in actual_vertices
+        assert vertex_to in actual_vertices
+
+        actual_edges = graph.edges
+        assert len(actual_edges) == 2
+        assert (vertex_from, vertex_to, 1) in actual_edges
+        assert (vertex_to, vertex_from, 1) in actual_edges
+
+        check_undirected_graph_variants(graph)

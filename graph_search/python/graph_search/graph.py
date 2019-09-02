@@ -11,16 +11,6 @@ class AbstractGraph(abc.ABC):
     Nodes are represented by integers, and edges as tuples of `(vertex_from, vertex_to, weight)`,
     where weight is a float representing the weight of the edge (this will be 1 in unweighted
     graphs.
-
-    Defines::
-     vertices
-     edges
-     load
-     save
-     children_of
-     parents_of
-     edges_from
-     edges_to
     """
 
     @abc.abstractproperty
@@ -48,23 +38,6 @@ class AbstractGraph(abc.ABC):
         :param vertex_from: the vertex this edge leaves
         :param vertex_to: the vertex this edge enters
         :param weight: the weight of this vertex
-        """
-
-    @abc.abstractmethod
-    def save(self, path):
-        """
-        Save a graph to the provided filepath, will overwrite any existing file. Returns concrete
-        graph object
-        :param path: the string path from to which to save the graph
-        :rtype: concrete class extending AbstractGraph
-        """
-
-    @abc.abstractclassmethod
-    def load(cls, path):
-        """
-        Read a graph from a file at the provided filepath. Returns concrete graph object
-        :param path: the string path from which to load a graph
-        :rtype: concrete class extending AbstractGraph
         """
 
     @abc.abstractmethod
@@ -160,13 +133,6 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._edge_list.append((vertex_to, vertex_from, weight))
         self._vertices.extend([vertex_from, vertex_to])
         self.validate_undirectedness()
-
-    def save(self, path):
-        pass
-
-    @classmethod
-    def load(cls, path):
-        pass
 
     def children_of(self, vertex):
         pass
