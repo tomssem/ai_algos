@@ -1,6 +1,9 @@
-import pytest
-from graph_search.graph import UndirectedEdgeListGraph, GraphInvariantViolationException
+import itertools
 import random
+
+import pytest
+
+from graph_search.graph import UndirectedEdgeListGraph, GraphInvariantViolationException, MultipleEdgesException
 
 def check_undirected_graph_variants(graph):
     try:
@@ -74,6 +77,14 @@ class TestUndirectedEdgeListGraph:
 
         check_undirected_graph_variants(self.graph)
 
+    def test_cant_add_same_edge_twice(self):
+        self.graph.add_edge(1, 2, 3)
+
+        with pytest.raises(MultipleEdgesException) as excinfo:
+            self.graph.add_edge(1, 2, 3)
+
+        assert "already" in str(excinfo.value)
+
     def test_catch_undirectedness_violations(self):
         self.graph._edge_list.add((1, 2, 3))
 
@@ -92,21 +103,14 @@ class TestUndirectedEdgeListGraph:
 
         add_edges_test(edges, self.graph)
 
-    def test_edges_unique(self):
-        edges = [(1, 2, 4.6), (1, 2, 4.6)]
-
-        add_edges_test(edges, self.graph)
-
     def test_add_many_edges(self):
         random.seed(1000003)
-        edges = []
-        for _ in range(3000):
-            edges.append((random.randint(0, 10000),
-                          random.randint(0, 10000),
-                          random.uniform(0, 10000)))
+        all_edges = set(map(tuple, map(sorted, itertools.product(range(1000), range(1000)))))
+        edges_no_weight = random.sample(all_edges, 10000)
+        edges = [(v_in, v_out, random.uniform(0, 10000)) for v_in, v_out in edges_no_weight]
         add_edges_test(edges, self.graph)
 
-    def test_can_children_of_simple(self):
+    def test_children_of_simple(self):
         vertex_from = 1
         vertex_to = 2
         weight = 3.14

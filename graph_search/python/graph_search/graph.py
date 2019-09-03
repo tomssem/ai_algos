@@ -6,9 +6,10 @@ import abc
 import collections
 import copy
 
+
 class AbstractGraph(abc.ABC):
     """
-    Abstract base class for all graph objects. This is an immutable data structure
+    Abstract base class for all graph objects. This is an mutable data structure
     Nodes are represented by integers, and edges as tuples of `(vertex_from, vertex_to, weight)`,
     where weight is a float representing the weight of the edge (this will be 1 in unweighted
     graphs.
@@ -35,7 +36,6 @@ class AbstractGraph(abc.ABC):
         Behaviour may change based on whether this is a directed graph or an undirected graph
         (see implementing subclass).
         If the vertices are not present in the graph they will be added
-        Returns a new graph (since this is an immutable graph)
         :param vertex_from: the vertex this edge leaves
         :param vertex_to: the vertex this edge enters
         :param weight: the weight of this vertex
@@ -77,15 +77,24 @@ class AbstractGraph(abc.ABC):
         :rtype: List[Tuple[int, int, float]]
         """
 
+
 class GraphInvariantViolationException(Exception):
     """
     Raised when graph is found to be in violation of its invariants
     """
 
+
 class VertexNotFoundException(Exception):
     """
     Raised when a requested vertex is not on the graph
     """
+
+
+class MultipleEdgesException(Exception):
+    """
+    Raised when the same edge added to the graph again
+    """
+
 
 class UndirectedGraph(AbstractGraph):
     """
@@ -114,6 +123,7 @@ class UndirectedGraph(AbstractGraph):
         :param weight: the weight of this vertex
         """
 
+
 class UndirectedEdgeListGraph(UndirectedGraph):
     """
     Undirected graph that is represented using an edge list
@@ -122,6 +132,7 @@ class UndirectedEdgeListGraph(UndirectedGraph):
     def __init__(self):
         self._edge_list = set()
         self._vertices = set()
+        self._edge_set = set()  # used to see if an edge has already been added
 
     def validate_undirectedness(self):
         cnt = collections.Counter()
@@ -141,10 +152,13 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         return copy.copy(self._edge_list)
 
     def add_edge(self, vertex_from, vertex_to, weight=1):
+        if (vertex_from, vertex_to) in self._edge_set or (vertex_to, vertex_from) in self._edge_set:
+            raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
+                                                                                 vertex_to))
+        self._edge_set.add((vertex_from, vertex_to))
         self._edge_list.add((vertex_from, vertex_to, weight))
         self._edge_list.add((vertex_to, vertex_from, weight))
         self._vertices.update([vertex_from, vertex_to])
-        self.validate_undirectedness()
 
     def children_of(self, vertex):
         if vertex not in self._vertices:
