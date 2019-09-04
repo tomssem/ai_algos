@@ -117,14 +117,14 @@ class TestUndirectedEdgeListGraph:
         edges = create_unique_edges(1000, 10000, 0, 10000)
         add_edges_test(edges, self.graph)
 
-    def test_children_of_simple(self):
+    def test_edges_from_simple(self):
         vertex_from = 1
         vertex_to = 2
         weight = 3.14
         self.graph.add_edge(vertex_from, vertex_to, weight)
 
-        assert [(vertex_to, weight)] == self.graph.children_of(vertex_from)
-        assert [(vertex_from, weight)] == self.graph.children_of(vertex_to)
+        assert [(vertex_from, vertex_to, weight)] == self.graph.edges_from(vertex_from)
+        assert [(vertex_to, vertex_from, weight)] == self.graph.edges_from(vertex_to)
 
     def test_children_of_complex(self):
         edges = create_unique_edges(100, 1000, 0, 1000)
@@ -133,9 +133,9 @@ class TestUndirectedEdgeListGraph:
             self.graph.add_edge(*edge)
 
         for v_from, _, _  in edges:
-            expected_parents = [(v_to, weight) for (_v_from, v_to, weight) in self.graph.edges if v_from == _v_from]
+            expected_parents = [(v_from, v_to, weight) for (_v_from, v_to, weight) in self.graph.edges if v_from == _v_from]
 
-            assert sorted(self.graph.children_of(v_from)) == sorted(expected_parents)
+            assert sorted(self.graph.edges_from(v_from)) == sorted(expected_parents)
 
     def test_parents_of_simple(self):
         vertex_from = 1
@@ -143,8 +143,8 @@ class TestUndirectedEdgeListGraph:
         weight = 3.14
         self.graph.add_edge(vertex_from, vertex_to, weight)
 
-        assert [(vertex_to, weight)] == self.graph.parents_of(vertex_from)
-        assert [(vertex_from, weight)] == self.graph.parents_of(vertex_to)
+        assert [(vertex_to, vertex_from, weight)] == self.graph.edges_to(vertex_from)
+        assert [(vertex_from, vertex_to, weight)] == self.graph.edges_to(vertex_to)
 
     def test_parents_of_complex(self):
         edges = create_unique_edges(100, 1000, 0, 1000)
@@ -153,6 +153,6 @@ class TestUndirectedEdgeListGraph:
             self.graph.add_edge(*edge)
 
         for _, v_to, _  in edges:
-            expected_parents = [(v_from, weight) for (v_from, _v_to, weight) in self.graph.edges if v_to == _v_to]
+            expected_parents = [(v_from, _v_to, weight) for (v_from, _v_to, weight) in self.graph.edges if v_to == _v_to]
 
-            assert sorted(self.graph.parents_of(v_to)) == sorted(expected_parents)
+            assert sorted(self.graph.edges_to(v_to)) == sorted(expected_parents)

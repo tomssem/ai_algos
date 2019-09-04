@@ -42,24 +42,6 @@ class AbstractGraph(abc.ABC):
         """
 
     @abc.abstractmethod
-    def children_of(self, vertex):
-        """
-        Get children that are accessible to this node, along with accompanying weights
-        :param int vertex: the vertex we want to find all children of
-        :returns: A list of all children [(vertex, weight)]
-        :rtype: List[Tuple[int, float]]
-        """
-
-    @abc.abstractmethod
-    def parents_of(self, vertex):
-        """
-        Get parents that can access this node along with accompanying weights.
-        :param int vertex: the vertex we want to find all parents of
-        :returns: A list of all parents [(vertex, weight)]
-        :rtype: List[Tuple[int, float]]
-        """
-
-    @abc.abstractmethod
     def edges_from(self, vertex):
         """
         Get all edges that lead from supplied vertex
@@ -160,7 +142,18 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._edge_list.add((vertex_to, vertex_from, weight))
         self._vertices.update([vertex_from, vertex_to])
 
-    def children_of(self, vertex):
+    def _get_matching_edges(self, predicate):
+        # gets all edges that match the provided predicate
+        # predicate is of type Func[(int, int, float), Bool]
+
+        results = []
+        for edge in self._edge_list:
+            if predicate(*edge):
+                results.append(edge)
+
+        return results
+
+    def edges_from(self, vertex):
         if vertex not in self._vertices:
             raise VertexNotFoundException("No such vertex {}".format(vertex))
 
@@ -169,9 +162,9 @@ class UndirectedEdgeListGraph(UndirectedGraph):
             if vertex_from == vertex:
                 results.append((vertex_to, weight))
 
-        return results
+        return self._get_matching_edges(lambda v, _v, _w: v == vertex)
 
-    def parents_of(self, vertex):
+    def edges_to(self, vertex):
         if vertex not in self._vertices:
             raise VertexNotFoundException("No such vertex {}".format(vertex))
 
@@ -180,10 +173,4 @@ class UndirectedEdgeListGraph(UndirectedGraph):
             if vertex_to == vertex:
                 results.append((vertex_from, weight))
 
-        return results
-
-    def edges_from(self, vertex):
-        pass
-
-    def edges_to(self, vertex):
-        pass
+        return self._get_matching_edges(lambda _v, v, _w: v == vertex)
