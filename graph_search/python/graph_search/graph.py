@@ -53,7 +53,7 @@ class AbstractGraph(abc.ABC):
     @abc.abstractmethod
     def parents_of(self, vertex):
         """
-        Get parents that can access this node laong with accompanying weights.
+        Get parents that can access this node along with accompanying weights.
         :param int vertex: the vertex we want to find all parents of
         :returns: A list of all parents [(vertex, weight)]
         :rtype: List[Tuple[int, float]]
@@ -172,7 +172,15 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         return results
 
     def parents_of(self, vertex):
-        pass
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
+
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_to == vertex:
+                results.append((vertex_from, weight))
+
+        return results
 
     def edges_from(self, vertex):
         pass
