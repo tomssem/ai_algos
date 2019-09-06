@@ -3,7 +3,8 @@ import random
 
 import pytest
 
-from graph_search.graph import UndirectedEdgeListGraph, GraphInvariantViolationException, MultipleEdgesException
+from graph_search.graph import (UndirectedEdgeListGraph, GraphInvariantViolationException,
+                                MultipleEdgesException, DirectedEgeListGraph)
 
 def check_undirected_graph_variants(graph):
     try:
@@ -19,8 +20,29 @@ def create_unique_edges(num_vertices, num_edges, min_weight, max_weight):
     edges_no_weight = random.sample(all_edges, num_edges)
     return [(v_in, v_out, random.uniform(min_weight, max_weight)) for v_in, v_out in edges_no_weight]
 
+def directed_add_edges_test(edges, graph):
+    # check that when we edge an edge to a graph, it and the edge in the opposite direction is
+    # added.
+    expected_edges = set()
+    expected_vertices = set()
 
-def add_edges_test(edges, graph):
+    for vertex_from, vertex_to, weight in edges:
+        graph.add_edge(vertex_from, vertex_to, weight)
+        expected_vertices.add(vertex_from)
+        expected_vertices.add(vertex_to)
+        expected_edges.add((vertex_from, vertex_to, weight))
+
+
+    assert len(expected_edges) == len(graph.edges)
+    assert expected_edges == set(graph.edges)
+
+    assert len(expected_vertices) == len(graph.vertices)
+    assert expected_vertices == set(graph.vertices)
+
+
+def undirected_add_edges_test(edges, graph):
+    # check that when we edge an edge to a graph, it and the edge in the opposite direction is
+    # added.
     expected_edges = set()
     expected_vertices = set()
 
@@ -40,7 +62,7 @@ def add_edges_test(edges, graph):
 
     check_undirected_graph_variants(graph)
 
-@pytest.fixture(params=[UndirectedEdgeListGraph])
+@pytest.fixture(params=[UndirectedEdgeListGraph, DirectedEgeListGraph])
 def construct_graph(request):
     return request.param()
 
@@ -107,18 +129,18 @@ def test_can_add_multiple_weighted_edges(construct_graph):
     graph = construct_graph
     edges = [(1, 2, 4.6), (4, 3, 8.8)]
 
-    add_edges_test(edges, graph)
+    undirected_add_edges_test(edges, graph)
 
 def test_vertices_unique(construct_graph):
     graph = construct_graph
     edges = [(1, 2, 4.6), (4, 2, 8.8)]
 
-    add_edges_test(edges, graph)
+    undirected_add_edges_test(edges, graph)
 
 def test_add_many_edges(construct_graph):
     graph = construct_graph
     edges = create_unique_edges(1000, 10000, 0, 10000)
-    add_edges_test(edges, graph)
+    undirected_add_edges_test(edges, graph)
 
 def test_edges_from_simple(construct_graph):
     graph = construct_graph

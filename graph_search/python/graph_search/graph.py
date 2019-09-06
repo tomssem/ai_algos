@@ -41,7 +41,17 @@ class AbstractGraph(abc.ABC):
         :param weight: the weight of this vertex
         """
 
-    @abc.abstractmethod
+    def _get_matching_edges(self, predicate):
+        # gets all edges that match the provided predicate
+        # predicate is of type Func[(int, int, float), Bool]
+
+        results = []
+        for edge in self._edge_list:
+            if predicate(*edge):
+                results.append(edge)
+
+        return results
+
     def edges_from(self, vertex):
         """
         Get all edges that lead from supplied vertex
@@ -49,8 +59,16 @@ class AbstractGraph(abc.ABC):
         :returns: A list of all edges from this node [(vertex_out, vertex_in, weight)]
         :rtype: List[Tuple[int, int, float]]
         """
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
 
-    @abc.abstractmethod
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_from == vertex:
+                results.append((vertex_to, weight))
+
+        return self._get_matching_edges(lambda v, _v, _w: v == vertex)
+
     def edges_to(self, vertex):
         """
         Get all edges that lead to supplied vertex
@@ -58,6 +76,15 @@ class AbstractGraph(abc.ABC):
         :returns: A list of all edges into this node [(vertex_out, vertex_in, weight)]
         :rtype: List[Tuple[int, int, float]]
         """
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
+
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_to == vertex:
+                results.append((vertex_from, weight))
+
+        return self._get_matching_edges(lambda _v, v, _w: v == vertex)
 
 
 class GraphInvariantViolationException(Exception):
@@ -105,6 +132,65 @@ class UndirectedGraph(AbstractGraph):
         :param weight: the weight of this vertex
         """
 
+class DirectedGraph(AbstractGraph):
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        """
+        Add an edge from `vertex_from` to `vertex_to` with weight `weight` (default value: 1).
+        Only the edge will be added, and the edge in the opposite direction will not be added (as
+        in UndirectedGraph
+        Returns a new graph (since this is an immutable graph)
+        :param vertex_from: the vertex this edge leaves
+        :param vertex_to: the vertex this edge enters
+        :param weight: the weight of this vertex
+        """
+
+
+class DirectedEgeListGraph(DirectedGraph):
+    """
+    A directed graph that is represented by and edge list
+    """
+    def __init__(self):
+        self._vertices = set()
+        self._edge_list = set()
+        self._edge_set = set()
+
+    @property
+    def vertices(self):
+        return copy.deepcopy(self._vertices)
+
+    @abc.abstractproperty
+    def edges(self):
+        return copy.deepcopy(self._edge_list)
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        if (vertex_from, vertex_to) in self._edge_set:
+            raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
+                                                                                 vertex_to))
+        self._edge_set.add((vertex_from, vertex_to))
+        self._edge_list.add((vertex_from, vertex_to, weight))
+        self._vertices.update([vertex_from, vertex_to])
+
+    @abc.abstractmethod
+    def edges_from(self, vertex):
+        """
+        Get all edges that lead from supplied vertex
+        :param int vertex: the vertex we want to find all edges from
+        :returns: A list of all edges from this node [(vertex_out, vertex_in, weight)]
+        :rtype: List[Tuple[int, int, float]]
+        """
+
+    @abc.abstractmethod
+    def edges_to(self, vertex):
+        """
+        Get all edges that lead to supplied vertex
+        :param int vertex: the vertex we want to find all edges to
+        :returns: A list of all edges into this node [(vertex_out, vertex_in, weight)]
+        :rtype: List[Tuple[int, int, float]]
+        """
+
+
 
 class UndirectedEdgeListGraph(UndirectedGraph):
     """
@@ -141,36 +227,3 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._edge_list.add((vertex_from, vertex_to, weight))
         self._edge_list.add((vertex_to, vertex_from, weight))
         self._vertices.update([vertex_from, vertex_to])
-
-    def _get_matching_edges(self, predicate):
-        # gets all edges that match the provided predicate
-        # predicate is of type Func[(int, int, float), Bool]
-
-        results = []
-        for edge in self._edge_list:
-            if predicate(*edge):
-                results.append(edge)
-
-        return results
-
-    def edges_from(self, vertex):
-        if vertex not in self._vertices:
-            raise VertexNotFoundException("No such vertex {}".format(vertex))
-
-        results = []
-        for vertex_from, vertex_to, weight in self._edge_list:
-            if vertex_from == vertex:
-                results.append((vertex_to, weight))
-
-        return self._get_matching_edges(lambda v, _v, _w: v == vertex)
-
-    def edges_to(self, vertex):
-        if vertex not in self._vertices:
-            raise VertexNotFoundException("No such vertex {}".format(vertex))
-
-        results = []
-        for vertex_from, vertex_to, weight in self._edge_list:
-            if vertex_to == vertex:
-                results.append((vertex_from, weight))
-
-        return self._get_matching_edges(lambda _v, v, _w: v == vertex)
