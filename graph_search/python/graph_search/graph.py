@@ -153,14 +153,10 @@ class DirectedGraph(AbstractGraph):
         """
 
 
-class DirectedEgeListGraph(DirectedGraph):
+class DirectedEdgeListGraph(DirectedGraph):
     """
     A directed graph that is represented by and edge list
     """
-    def __init__(self):
-        self._vertices = set()
-        self._edge_list = set()
-        self._edge_set = set()
 
     def add_edge(self, vertex_from, vertex_to, weight=1):
         if (vertex_from, vertex_to) in self._edge_set:
@@ -175,11 +171,6 @@ class UndirectedEdgeListGraph(UndirectedGraph):
     """
     Undirected graph that is represented using an edge list
     """
-
-    def __init__(self):
-        self._edge_list = set()
-        self._vertices = set()
-        self._edge_set = set()  # used to see if an edge has already been added
 
     def validate_undirectedness(self):
         cnt = collections.Counter()

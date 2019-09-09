@@ -4,7 +4,7 @@ import random
 import pytest
 
 from graph_search.graph import (UndirectedEdgeListGraph, GraphInvariantViolationException,
-                                MultipleEdgesException, DirectedEgeListGraph)
+                                MultipleEdgesException, DirectedEdgeListGraph)
 
 def check_undirected_graph_variants(graph):
     try:
@@ -61,7 +61,7 @@ def directed_add_edges_test(edges, graph):
     assert expected_vertices == set(graph.vertices)
 
 @pytest.fixture(params=[(UndirectedEdgeListGraph, undirected_add_edges_test),
-                        (DirectedEgeListGraph, directed_add_edges_test)])
+                        (DirectedEdgeListGraph, directed_add_edges_test)])
 def construct_graph(request):
     GraphType, test_function = request.param
     return GraphType(), test_function
@@ -98,7 +98,7 @@ def test_can_add_a_weighted_edge_undirected_graph():
     check_undirected_graph_variants(graph)
 
 def test_can_add_a_weighted_edge_directed_graph():
-    graph = DirectedEgeListGraph()
+    graph = DirectedEdgeListGraph()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
@@ -134,7 +134,7 @@ def test_can_add_an_unweighted_edge_undirected_graph():
     check_undirected_graph_variants(graph)
 
 def test_can_add_an_unweighted_edge_directed_graph():
-    graph = DirectedEgeListGraph()
+    graph = DirectedEdgeListGraph()
     vertex_from = 1
     vertex_to = 2
 
@@ -186,7 +186,7 @@ def test_edges_from_simple_undirected():
     assert [(vertex_to, vertex_from, weight)] == graph.edges_from(vertex_to)
 
 def test_edges_from_simple_directed():
-    graph = DirectedEgeListGraph()
+    graph = DirectedEdgeListGraph()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
@@ -218,7 +218,7 @@ def test_parents_of_simple_undirected():
     assert [(vertex_from, vertex_to, weight)] == graph.edges_to(vertex_to)
 
 def test_parents_of_simple_directed():
-    graph = DirectedEgeListGraph()
+    graph = DirectedEdgeListGraph()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
