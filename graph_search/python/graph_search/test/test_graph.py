@@ -5,9 +5,12 @@ import pytest
 
 from graph_search.graph import (UndirectedEdgeListGraph, GraphInvariantViolationException,
                                 MultipleEdgesException, DirectedEdgeListGraph,
-                                UndirectedAdjacencyMatrixGraph, DirectedAdjacencyMatrixGraph)
+                                UndirectedAdjacencyMatrixGraph, DirectedAdjacencyMatrixGraph,
+                                UndirectedAdjacencyListGraph)
 
-UNDIRECTED_TYPE=[UndirectedEdgeListGraph, UndirectedAdjacencyMatrixGraph]
+UNDIRECTED_TYPE = [UndirectedEdgeListGraph,
+                   UndirectedAdjacencyMatrixGraph,
+                   UndirectedAdjacencyListGraph]
 DIRECTED_TYPE=[DirectedEdgeListGraph, DirectedAdjacencyMatrixGraph]
 
 def check_undirected_graph_variants(graph):
@@ -74,14 +77,16 @@ def directed_add_edges_test(edges, graph):
 @pytest.fixture(params=[(UndirectedEdgeListGraph, undirected_add_edges_test),
                         (DirectedEdgeListGraph, directed_add_edges_test),
                         (UndirectedAdjacencyMatrixGraph, undirected_add_edges_test),
-                        (DirectedAdjacencyMatrixGraph, directed_add_edges_test)])
-def construct_graph(request):
+                        (DirectedAdjacencyMatrixGraph, directed_add_edges_test),
+                        (UndirectedAdjacencyListGraph, undirected_add_edges_test)])
+def construct_graph(request, set_random_seed):
+    set_random_seed
     GraphType, test_function = request.param
     return GraphType(), test_function
 
 @pytest.fixture
 def set_random_seed():
-    random.seed(1000003)
+    random.seed(1000005)
     yield
 
 
@@ -243,7 +248,10 @@ def test_edges_from_complex(construct_graph):
 
     edges = graph.edges
     for v_from, _, _  in edges:
-        expected_children = [(v_from, v_to, weight) for (_v_from, v_to, weight) in edges if v_from == _v_from]
+        expected_children = set([(v_from, v_to, weight)
+                                 for (_v_from, v_to, weight)
+                                 in edges
+                                 if v_from == _v_from])
         actual_children = edge_list_to_dict(graph.edges_from(v_from))
 
         assert len(expected_children) == len(actual_children)
@@ -292,9 +300,14 @@ def test_edges_to_complex(construct_graph):
 
     edges = graph.edges
     for _, v_to, _  in edges:
-        expected_parents = [(v_from, _v_to, weight) for (v_from, _v_to, weight) in edges if v_to == _v_to]
+        expected_parents = set([(v_from, _v_to, weight)
+                                for (v_from, _v_to, weight)
+                                in edges
+                                if v_to == _v_to])
 
+        assert len(graph.edges_to(v_to)) == len(expected_parents)
         assert sorted(graph.edges_to(v_to)) == sorted(expected_parents)
+
 
 def test_catch_undirectedness_violations_edge_list():
     graph = UndirectedEdgeListGraph()

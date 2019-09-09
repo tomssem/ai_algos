@@ -5,6 +5,7 @@ Data structures for representing graphs
 import abc
 import collections
 import copy
+import functools
 
 import numpy as np
 
@@ -305,3 +306,55 @@ class DirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, DirectedGraph):
             self._resize(greatest_vertex + 1)
 
         self._adjacency_matrix[vertex_from, vertex_to] = weight
+
+class AbstractAdjacencyListGraph(AbstractGraph):
+    """
+    Base class for all adjacency list graphs
+    """
+    def __init__(self):
+        # maps from a vertex, to all vertices reachable to it along with the respective weights
+        self._adjacency_list = collections.defaultdict(list) # type: Dict[Int, Tuple[int, float]]
+        self._edge_set = set()
+
+    @property
+    def vertices(self):
+        def _accum(a, b):
+            a.add(b)
+            return a
+        from_vertices = functools.reduce(_accum, self._adjacency_list.keys(), set())
+        to_vertices = [e for edges in self._adjacency_list.values() for (e, w) in edges]
+        return list(from_vertices.union(to_vertices))
+
+    @property
+    def edges(self):
+        return list([(v1, v2, w)
+                     for v1 in self._adjacency_list
+                     for (v2, w)
+                     in self._adjacency_list[v1]])
+
+    def edges_from(self, vertex):
+        return list([(vertex, v1, w) for (v1, w) in self._adjacency_list[vertex]])
+
+    def edges_to(self, vertex):
+        return list(set([(v1, vertex, w)
+                         for v1 in self._adjacency_list
+                         for (v2, w) in self._adjacency_list[v1]
+                         if v2 == vertex]))
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        pass
+
+class UndirectedAdjacencyListGraph(AbstractAdjacencyListGraph, UndirectedGraph):
+    """
+    Adjacency list implementation of undirected graph
+    """
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        if (vertex_from, vertex_to) in self._edge_set or (vertex_to, vertex_from) in self._edge_set:
+            raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
+                                                                                 vertex_to))
+        self._adjacency_list[vertex_from].append((vertex_to, weight))
+        self._adjacency_list[vertex_to].append((vertex_from, weight))
+
+        self._edge_set.add((vertex_from, vertex_to))
+        self._edge_set.add((vertex_to, vertex_from))
