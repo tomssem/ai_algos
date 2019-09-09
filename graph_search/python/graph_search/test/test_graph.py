@@ -4,7 +4,10 @@ import random
 import pytest
 
 from graph_search.graph import (UndirectedEdgeListGraph, GraphInvariantViolationException,
-                                MultipleEdgesException, DirectedEdgeListGraph)
+                                MultipleEdgesException, DirectedEdgeListGraph,
+                                UndirectedAdjacencyMatrixGraph)
+
+UNDIRECTED_TYPE=[UndirectedEdgeListGraph, UndirectedAdjacencyMatrixGraph]
 
 def check_undirected_graph_variants(graph):
     try:
@@ -34,9 +37,12 @@ def undirected_add_edges_test(edges, graph):
         expected_edges.add((vertex_from, vertex_to, weight))
         expected_edges.add((vertex_to, vertex_from, weight))
 
+    actual_edges = graph.edges
+    actual_edges_dict = edge_list_to_dict(actual_edges)
+    assert len(expected_edges) == len(actual_edges)
 
-    assert len(expected_edges) == len(graph.edges)
-    assert expected_edges == set(graph.edges)
+    for v_in, v_out, w in expected_edges:
+        assert pytest.approx(actual_edges_dict[(v_in, v_out)], w)
 
     assert len(expected_vertices) == len(graph.vertices)
     assert expected_vertices == set(graph.vertices)
@@ -61,7 +67,8 @@ def directed_add_edges_test(edges, graph):
     assert expected_vertices == set(graph.vertices)
 
 @pytest.fixture(params=[(UndirectedEdgeListGraph, undirected_add_edges_test),
-                        (DirectedEdgeListGraph, directed_add_edges_test)])
+                        (DirectedEdgeListGraph, directed_add_edges_test),
+                         (UndirectedAdjacencyMatrixGraph, undirected_add_edges_test)])
 def construct_graph(request):
     GraphType, test_function = request.param
     return GraphType(), test_function
@@ -77,8 +84,14 @@ def test_empty_graph_is_empty(construct_graph):
     assert not graph.edges
     assert not graph.vertices
 
-def test_can_add_a_weighted_edge_undirected_graph():
-    graph = UndirectedEdgeListGraph()
+def edge_list_to_dict(edges):
+    # convert an edge list to a dict of vertices to weights to make it easier to compare
+    # numpy and native python floats
+    return {(v1, v2): w for (v1, v2, w) in edges}
+
+@pytest.mark.parametrize("GraphType", UNDIRECTED_TYPE)
+def test_can_add_a_weighted_edge_undirected_graph(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
@@ -91,9 +104,11 @@ def test_can_add_a_weighted_edge_undirected_graph():
     assert vertex_to in actual_vertices
 
     actual_edges = graph.edges
+    actual_edges_dict = edge_list_to_dict(actual_edges)
+
     assert len(actual_edges) == 2
-    assert (vertex_from, vertex_to, weight) in actual_edges
-    assert (vertex_to, vertex_from, weight) in actual_edges
+    assert pytest.approx(actual_edges_dict[(vertex_from, vertex_to)], weight)
+    assert pytest.approx(actual_edges_dict[(vertex_to, vertex_from)], weight)
 
     check_undirected_graph_variants(graph)
 
@@ -114,8 +129,9 @@ def test_can_add_a_weighted_edge_directed_graph():
     assert len(actual_edges) == 1
     assert (vertex_from, vertex_to, weight) in actual_edges
 
-def test_can_add_an_unweighted_edge_undirected_graph():
-    graph = UndirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", UNDIRECTED_TYPE)
+def test_can_add_an_unweighted_edge_undirected_graph(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
 
@@ -175,15 +191,25 @@ def test_add_many_edges(construct_graph):
     edges = create_unique_edges(1000, 10000, 0, 10000)
     test_function(edges, graph)
 
-def test_edges_from_simple_undirected():
-    graph = UndirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", UNDIRECTED_TYPE)
+def test_edges_from_simple_undirected(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
     graph.add_edge(vertex_from, vertex_to, weight)
 
-    assert [(vertex_from, vertex_to, weight)] == graph.edges_from(vertex_from)
-    assert [(vertex_to, vertex_from, weight)] == graph.edges_from(vertex_to)
+    from_vertex_from_edges = graph.edges_from(vertex_from)
+    assert len(from_vertex_from_edges) == 1
+    assert from_vertex_from_edges[0][0] == vertex_from
+    assert from_vertex_from_edges[0][1] == vertex_to
+    assert pytest.approx(from_vertex_from_edges[0][2], weight)
+
+    to_vertex_from_edges = graph.edges_from(vertex_to)
+    assert len(to_vertex_from_edges) == 1
+    assert to_vertex_from_edges[0][0] == vertex_to
+    assert to_vertex_from_edges[0][1] == vertex_from
+    assert pytest.approx(to_vertex_from_edges[0][2], weight)
 
 def test_edges_from_simple_directed():
     graph = DirectedEdgeListGraph()
@@ -192,9 +218,13 @@ def test_edges_from_simple_directed():
     weight = 3.14
     graph.add_edge(vertex_from, vertex_to, weight)
 
-    assert [(vertex_from, vertex_to, weight)] == graph.edges_from(vertex_from)
+    from_vertex_from_edges = graph.edges_from(vertex_from)
+    assert len(from_vertex_from_edges) == 1
+    assert from_vertex_from_edges[0][0] == vertex_from
+    assert from_vertex_from_edges[0][1] == vertex_to
+    assert pytest.approx(from_vertex_from_edges[0][2], weight)
 
-def test_children_of_complex(construct_graph):
+def test_edges_from_complex(construct_graph):
     graph, test_function = construct_graph
     edges = create_unique_edges(100, 1000, 0, 1000)
 
@@ -203,21 +233,34 @@ def test_children_of_complex(construct_graph):
 
     edges = graph.edges
     for v_from, _, _  in edges:
-        expected_parents = [(v_from, v_to, weight) for (_v_from, v_to, weight) in edges if v_from == _v_from]
+        expected_children = [(v_from, v_to, weight) for (_v_from, v_to, weight) in edges if v_from == _v_from]
+        actual_children = edge_list_to_dict(graph.edges_from(v_from))
 
-        assert sorted(graph.edges_from(v_from)) == sorted(expected_parents)
+        assert len(expected_children) == len(actual_children)
+        for v1, v2, w in expected_children:
+            assert pytest.approx(actual_children[(v1, v2)], w)
 
-def test_parents_of_simple_undirected():
-    graph = UndirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", UNDIRECTED_TYPE)
+def test_edges_to_simple_undirected(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
     graph.add_edge(vertex_from, vertex_to, weight)
 
-    assert [(vertex_to, vertex_from, weight)] == graph.edges_to(vertex_from)
-    assert [(vertex_from, vertex_to, weight)] == graph.edges_to(vertex_to)
+    from_vertex_from_edges = graph.edges_from(vertex_from)
+    assert len(from_vertex_from_edges) == 1
+    assert from_vertex_from_edges[0][0] == vertex_from
+    assert from_vertex_from_edges[0][1] == vertex_to
+    assert pytest.approx(from_vertex_from_edges[0][2], weight)
 
-def test_parents_of_simple_directed():
+    to_vertex_from_edges = graph.edges_from(vertex_to)
+    assert len(to_vertex_from_edges) == 1
+    assert to_vertex_from_edges[0][0] == vertex_to
+    assert to_vertex_from_edges[0][1] == vertex_from
+    assert pytest.approx(to_vertex_from_edges[0][2], weight)
+
+def test_edges_to_simple_directed():
     graph = DirectedEdgeListGraph()
     vertex_from = 1
     vertex_to = 2
@@ -226,7 +269,7 @@ def test_parents_of_simple_directed():
 
     assert [(vertex_from, vertex_to, weight)] == graph.edges_to(vertex_to)
 
-def test_parents_of_complex(construct_graph):
+def test_edges_to_complex(construct_graph):
     graph, test_function = construct_graph
     edges = create_unique_edges(100, 1000, 0, 1000)
 
@@ -239,9 +282,19 @@ def test_parents_of_complex(construct_graph):
 
         assert sorted(graph.edges_to(v_to)) == sorted(expected_parents)
 
-def test_catch_undirectedness_violations(construct_graph):
+def test_catch_undirectedness_violations_edge_list():
     graph = UndirectedEdgeListGraph()
     graph._edge_list.add((1, 2, 3))
+
+    with pytest.raises(GraphInvariantViolationException) as excinfo:
+        graph.validate_undirectedness()
+
+    assert "undirected" in str(excinfo.value)
+
+def test_catch_undirectedness_violations_adjacency_list():
+    graph = UndirectedAdjacencyMatrixGraph()
+    graph._resize(10)
+    graph._adjacency_matrix[0][1] = 2
 
     with pytest.raises(GraphInvariantViolationException) as excinfo:
         graph.validate_undirectedness()

@@ -6,6 +6,12 @@ import abc
 import collections
 import copy
 
+import numpy as np
+
+DTYPE = np.dtype("float32")
+"""
+types we use for numpy arrays
+"""
 
 class AbstractGraph(abc.ABC):
     """
@@ -15,26 +21,19 @@ class AbstractGraph(abc.ABC):
     graphs.
     """
 
-    def __init__(self):
-        self._vertices = set()
-        self._edge_list = set()
-        self._edge_set = set()
-
-    @property
+    @abc.abstractproperty
     def vertices(self):
         """
         Return a list of all vertices
         :rtype: List[int]
         """
-        return copy.deepcopy(self._vertices)
 
-    @property
+    @abc.abstractproperty
     def edges(self):
         """
         Return a list of all edges
         :rtype: List[(int, int, weight)]
         """
-        return copy.deepcopy(self._edge_list)
 
     @abc.abstractmethod
     def add_edge(self, vertex_from, vertex_to, weight=1):
@@ -48,17 +47,7 @@ class AbstractGraph(abc.ABC):
         :param weight: the weight of this vertex
         """
 
-    def _get_matching_edges(self, predicate):
-        # gets all edges that match the provided predicate
-        # predicate is of type Func[(int, int, float), Bool]
-
-        results = []
-        for edge in self._edge_list:
-            if predicate(*edge):
-                results.append(edge)
-
-        return results
-
+    @abc.abstractmethod
     def edges_from(self, vertex):
         """
         Get all edges that lead from supplied vertex
@@ -66,16 +55,8 @@ class AbstractGraph(abc.ABC):
         :returns: A list of all edges from this node [(vertex_out, vertex_in, weight)]
         :rtype: List[Tuple[int, int, float]]
         """
-        if vertex not in self._vertices:
-            raise VertexNotFoundException("No such vertex {}".format(vertex))
 
-        results = []
-        for vertex_from, vertex_to, weight in self._edge_list:
-            if vertex_from == vertex:
-                results.append((vertex_to, weight))
-
-        return self._get_matching_edges(lambda v, _v, _w: v == vertex)
-
+    @abc.abstractmethod
     def edges_to(self, vertex):
         """
         Get all edges that lead to supplied vertex
@@ -83,15 +64,6 @@ class AbstractGraph(abc.ABC):
         :returns: A list of all edges into this node [(vertex_out, vertex_in, weight)]
         :rtype: List[Tuple[int, int, float]]
         """
-        if vertex not in self._vertices:
-            raise VertexNotFoundException("No such vertex {}".format(vertex))
-
-        results = []
-        for vertex_from, vertex_to, weight in self._edge_list:
-            if vertex_to == vertex:
-                results.append((vertex_from, weight))
-
-        return self._get_matching_edges(lambda _v, v, _w: v == vertex)
 
 
 class GraphInvariantViolationException(Exception):
@@ -112,7 +84,7 @@ class MultipleEdgesException(Exception):
     """
 
 
-class UndirectedGraph(AbstractGraph):
+class UndirectedGraph:
     """
     Class that represents an undirected graph.
 
@@ -140,6 +112,9 @@ class UndirectedGraph(AbstractGraph):
         """
 
 class DirectedGraph(AbstractGraph):
+    """
+    Class that represents an undirected graph
+    """
     @abc.abstractmethod
     def add_edge(self, vertex_from, vertex_to, weight=1):
         """
@@ -152,8 +127,61 @@ class DirectedGraph(AbstractGraph):
         :param weight: the weight of this vertex
         """
 
+class AbstractEdgeListGraph(AbstractGraph):
+    """
+    All edge list graphs inherit from this
+    """
+    def __init__(self):
+        self._vertices = set()
+        self._edge_list = set()
+        self._edge_set = set()
 
-class DirectedEdgeListGraph(DirectedGraph):
+    @property
+    def vertices(self):
+        return copy.deepcopy(self._vertices)
+
+    @property
+    def edges(self):
+        return copy.deepcopy(self._edge_list)
+
+    def _get_matching_edges(self, predicate):
+        # gets all edges that match the provided predicate
+        # predicate is of type Func[(int, int, float), Bool]
+
+        results = []
+        for edge in self._edge_list:
+            if predicate(*edge):
+                results.append(edge)
+
+        return results
+
+    def edges_from(self, vertex):
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
+
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_from == vertex:
+                results.append((vertex_to, weight))
+
+        return self._get_matching_edges(lambda v, _v, _w: v == vertex)
+
+    def edges_to(self, vertex):
+        if vertex not in self._vertices:
+            raise VertexNotFoundException("No such vertex {}".format(vertex))
+
+        results = []
+        for vertex_from, vertex_to, weight in self._edge_list:
+            if vertex_to == vertex:
+                results.append((vertex_from, weight))
+
+        return self._get_matching_edges(lambda _v, v, _w: v == vertex)
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        pass
+
+class DirectedEdgeListGraph(AbstractEdgeListGraph, DirectedGraph):
     """
     A directed graph that is represented by and edge list
     """
@@ -167,7 +195,7 @@ class DirectedEdgeListGraph(DirectedGraph):
         self._vertices.update([vertex_from, vertex_to])
 
 
-class UndirectedEdgeListGraph(UndirectedGraph):
+class UndirectedEdgeListGraph(AbstractEdgeListGraph, UndirectedGraph):
     """
     Undirected graph that is represented using an edge list
     """
@@ -189,3 +217,81 @@ class UndirectedEdgeListGraph(UndirectedGraph):
         self._edge_list.add((vertex_from, vertex_to, weight))
         self._edge_list.add((vertex_to, vertex_from, weight))
         self._vertices.update([vertex_from, vertex_to])
+
+class AbstractAdjacencyMatrixGraph(AbstractGraph):
+    """
+    Abstract adjacency matrix class
+    """
+    def __init__(self):
+        self._adjacency_matrix = np.empty((0, 0), dtype=DTYPE)
+
+    def _resize(self, size):
+        # resize the adjacency matrix to the specified square size, copying over previous elements
+        # into the same positions and padding with zeros
+        tmp = np.zeros((size, size), dtype=DTYPE)
+        tmp[:len(self._adjacency_matrix), :len(self._adjacency_matrix)] = self._adjacency_matrix
+        self._adjacency_matrix = tmp
+
+    @abc.abstractproperty
+    def vertices(self):
+        pass
+
+    @abc.abstractproperty
+    def edges(self):
+        pass
+
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        pass
+
+    @abc.abstractmethod
+    def edges_from(self, vertex):
+        pass
+
+    @abc.abstractmethod
+    def edges_to(self, vertex):
+        pass
+
+class UndirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, UndirectedGraph):
+    """
+    Adjacency matrix implementation of an undirected graph
+    """
+    @property
+    def vertices(self):
+        return np.where(self._adjacency_matrix.any(axis=0))[0].tolist()
+
+    @property
+    def edges(self):
+        return [(i, j, self._adjacency_matrix[i, j].item())
+                for i, j
+                in zip(*np.where(self._adjacency_matrix))]
+
+    def validate_undirectedness(self):
+        if not np.array_equiv(self._adjacency_matrix, self._adjacency_matrix.T):
+            raise GraphInvariantViolationException("Not undirected graph")
+
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        greatest_vertex = max(vertex_from, vertex_to)
+        if len(self._adjacency_matrix) > greatest_vertex:
+            # already space for this vertex
+            if (self._adjacency_matrix[vertex_from][vertex_to] or
+                    self._adjacency_matrix[vertex_to][vertex_from]):
+                # we already have an entry for this edge
+                raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
+                                                                                     vertex_to))
+        else:
+            # need to grow adjacency matrix
+            self._resize(greatest_vertex + 1)
+
+        self._adjacency_matrix[vertex_from, vertex_to] = weight
+        self._adjacency_matrix[vertex_to, vertex_from] = weight
+
+    def edges_from(self, vertex):
+        return [(vertex, i, float(self._adjacency_matrix[vertex, i]))
+                for i
+                in np.where(self._adjacency_matrix[vertex])[0]]
+
+    def edges_to(self, vertex):
+        return [(i, vertex, float(self._adjacency_matrix[i, vertex]))
+                for i
+                in np.where(self._adjacency_matrix[:, vertex])[0]]
