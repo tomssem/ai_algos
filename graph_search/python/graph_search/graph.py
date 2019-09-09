@@ -15,19 +15,26 @@ class AbstractGraph(abc.ABC):
     graphs.
     """
 
-    @abc.abstractproperty
+    def __init__(self):
+        self._vertices = set()
+        self._edge_list = set()
+        self._edge_set = set()
+
+    @property
     def vertices(self):
         """
         Return a list of all vertices
         :rtype: List[int]
         """
+        return copy.deepcopy(self._vertices)
 
-    @abc.abstractproperty
+    @property
     def edges(self):
         """
         Return a list of all edges
         :rtype: List[(int, int, weight)]
         """
+        return copy.deepcopy(self._edge_list)
 
     @abc.abstractmethod
     def add_edge(self, vertex_from, vertex_to, weight=1):
@@ -155,15 +162,6 @@ class DirectedEgeListGraph(DirectedGraph):
         self._edge_list = set()
         self._edge_set = set()
 
-    @property
-    def vertices(self):
-        return copy.deepcopy(self._vertices)
-
-    @abc.abstractproperty
-    def edges(self):
-        return copy.deepcopy(self._edge_list)
-
-    @abc.abstractmethod
     def add_edge(self, vertex_from, vertex_to, weight=1):
         if (vertex_from, vertex_to) in self._edge_set:
             raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
@@ -171,25 +169,6 @@ class DirectedEgeListGraph(DirectedGraph):
         self._edge_set.add((vertex_from, vertex_to))
         self._edge_list.add((vertex_from, vertex_to, weight))
         self._vertices.update([vertex_from, vertex_to])
-
-    @abc.abstractmethod
-    def edges_from(self, vertex):
-        """
-        Get all edges that lead from supplied vertex
-        :param int vertex: the vertex we want to find all edges from
-        :returns: A list of all edges from this node [(vertex_out, vertex_in, weight)]
-        :rtype: List[Tuple[int, int, float]]
-        """
-
-    @abc.abstractmethod
-    def edges_to(self, vertex):
-        """
-        Get all edges that lead to supplied vertex
-        :param int vertex: the vertex we want to find all edges to
-        :returns: A list of all edges into this node [(vertex_out, vertex_in, weight)]
-        :rtype: List[Tuple[int, int, float]]
-        """
-
 
 
 class UndirectedEdgeListGraph(UndirectedGraph):
@@ -210,14 +189,6 @@ class UndirectedEdgeListGraph(UndirectedGraph):
 
         if not all([v == 2 for v in cnt.values()]):
             raise GraphInvariantViolationException("Not undirected graph")
-
-    @property
-    def vertices(self):
-        return copy.copy(self._vertices)
-
-    @property
-    def edges(self):
-        return copy.copy(self._edge_list)
 
     def add_edge(self, vertex_from, vertex_to, weight=1):
         if (vertex_from, vertex_to) in self._edge_set or (vertex_to, vertex_from) in self._edge_set:
