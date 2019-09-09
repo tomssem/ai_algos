@@ -201,8 +201,9 @@ def test_children_of_complex(construct_graph):
     for edge in edges:
         graph.add_edge(*edge)
 
+    edges = graph.edges
     for v_from, _, _  in edges:
-        expected_parents = [(v_from, v_to, weight) for (_v_from, v_to, weight) in graph.edges if v_from == _v_from]
+        expected_parents = [(v_from, v_to, weight) for (_v_from, v_to, weight) in edges if v_from == _v_from]
 
         assert sorted(graph.edges_from(v_from)) == sorted(expected_parents)
 
@@ -232,8 +233,9 @@ def test_parents_of_complex(construct_graph):
     for edge in edges:
         graph.add_edge(*edge)
 
+    edges = graph.edges
     for _, v_to, _  in edges:
-        expected_parents = [(v_from, _v_to, weight) for (v_from, _v_to, weight) in graph.edges if v_to == _v_to]
+        expected_parents = [(v_from, _v_to, weight) for (v_from, _v_to, weight) in edges if v_to == _v_to]
 
         assert sorted(graph.edges_to(v_to)) == sorted(expected_parents)
 
