@@ -138,11 +138,11 @@ class AbstractEdgeListGraph(AbstractGraph):
 
     @property
     def vertices(self):
-        return copy.deepcopy(self._vertices)
+        return list(self._vertices)
 
     @property
     def edges(self):
-        return copy.deepcopy(self._edge_list)
+        return list(self._edge_list)
 
     def _get_matching_edges(self, predicate):
         # gets all edges that match the provided predicate
@@ -232,30 +232,6 @@ class AbstractAdjacencyMatrixGraph(AbstractGraph):
         tmp[:len(self._adjacency_matrix), :len(self._adjacency_matrix)] = self._adjacency_matrix
         self._adjacency_matrix = tmp
 
-    @abc.abstractproperty
-    def vertices(self):
-        pass
-
-    @abc.abstractproperty
-    def edges(self):
-        pass
-
-    @abc.abstractmethod
-    def add_edge(self, vertex_from, vertex_to, weight=1):
-        pass
-
-    @abc.abstractmethod
-    def edges_from(self, vertex):
-        pass
-
-    @abc.abstractmethod
-    def edges_to(self, vertex):
-        pass
-
-class UndirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, UndirectedGraph):
-    """
-    Adjacency matrix implementation of an undirected graph
-    """
     @property
     def vertices(self):
         return np.where(self._adjacency_matrix.any(axis=0))[0].tolist()
@@ -265,6 +241,27 @@ class UndirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, UndirectedGra
         return [(i, j, self._adjacency_matrix[i, j].item())
                 for i, j
                 in zip(*np.where(self._adjacency_matrix))]
+
+    def edges_from(self, vertex):
+        return [(vertex, i, float(self._adjacency_matrix[vertex, i]))
+                for i
+                in np.where(self._adjacency_matrix[vertex])[0]]
+
+    def edges_to(self, vertex):
+        return [(i, vertex, float(self._adjacency_matrix[i, vertex]))
+                for i
+                in np.where(self._adjacency_matrix[:, vertex])[0]]
+    @abc.abstractmethod
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        pass
+
+class UndirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, UndirectedGraph):
+    """
+    Adjacency matrix implementation of an undirected graph
+    """
+    @property
+    def vertices(self):
+        return np.where(self._adjacency_matrix.any(axis=0))[0].tolist()
 
     def validate_undirectedness(self):
         if not np.array_equiv(self._adjacency_matrix, self._adjacency_matrix.T):
@@ -286,12 +283,25 @@ class UndirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, UndirectedGra
         self._adjacency_matrix[vertex_from, vertex_to] = weight
         self._adjacency_matrix[vertex_to, vertex_from] = weight
 
-    def edges_from(self, vertex):
-        return [(vertex, i, float(self._adjacency_matrix[vertex, i]))
-                for i
-                in np.where(self._adjacency_matrix[vertex])[0]]
+class DirectedAdjacencyMatrixGraph(AbstractAdjacencyMatrixGraph, DirectedGraph):
+    """
+    Directed graph implemented as an adjacency matrix
+    """
+    @property
+    def vertices(self):
+        return list(set(np.where(self._adjacency_matrix.any(axis=0))[0].tolist() +
+                        np.where(self._adjacency_matrix.any(axis=1))[0].tolist()))
 
-    def edges_to(self, vertex):
-        return [(i, vertex, float(self._adjacency_matrix[i, vertex]))
-                for i
-                in np.where(self._adjacency_matrix[:, vertex])[0]]
+    def add_edge(self, vertex_from, vertex_to, weight=1):
+        greatest_vertex = max(vertex_from, vertex_to)
+        if len(self._adjacency_matrix) > greatest_vertex:
+            # already space for this vertex
+            if self._adjacency_matrix[vertex_from][vertex_to]:
+                # we already have an entry for this edge
+                raise MultipleEdgesException("Vertex ({}, {}) already exists".format(vertex_from,
+                                                                                     vertex_to))
+        else:
+            # need to grow adjacency matrix
+            self._resize(greatest_vertex + 1)
+
+        self._adjacency_matrix[vertex_from, vertex_to] = weight

@@ -5,9 +5,10 @@ import pytest
 
 from graph_search.graph import (UndirectedEdgeListGraph, GraphInvariantViolationException,
                                 MultipleEdgesException, DirectedEdgeListGraph,
-                                UndirectedAdjacencyMatrixGraph)
+                                UndirectedAdjacencyMatrixGraph, DirectedAdjacencyMatrixGraph)
 
 UNDIRECTED_TYPE=[UndirectedEdgeListGraph, UndirectedAdjacencyMatrixGraph]
+DIRECTED_TYPE=[DirectedEdgeListGraph, DirectedAdjacencyMatrixGraph]
 
 def check_undirected_graph_variants(graph):
     try:
@@ -60,15 +61,20 @@ def directed_add_edges_test(edges, graph):
         expected_vertices.add(vertex_to)
         expected_edges.add((vertex_from, vertex_to, weight))
 
-    assert len(expected_edges) == len(graph.edges)
-    assert expected_edges == set(graph.edges)
+    actual_edges = graph.edges
+    actual_edges_dict = edge_list_to_dict(actual_edges)
+    assert len(expected_edges) == len(actual_edges)
+
+    for v_in, v_out, w in expected_edges:
+        assert pytest.approx(actual_edges_dict[(v_in, v_out)], w)
 
     assert len(expected_vertices) == len(graph.vertices)
     assert expected_vertices == set(graph.vertices)
 
 @pytest.fixture(params=[(UndirectedEdgeListGraph, undirected_add_edges_test),
                         (DirectedEdgeListGraph, directed_add_edges_test),
-                         (UndirectedAdjacencyMatrixGraph, undirected_add_edges_test)])
+                        (UndirectedAdjacencyMatrixGraph, undirected_add_edges_test),
+                        (DirectedAdjacencyMatrixGraph, directed_add_edges_test)])
 def construct_graph(request):
     GraphType, test_function = request.param
     return GraphType(), test_function
@@ -112,8 +118,9 @@ def test_can_add_a_weighted_edge_undirected_graph(GraphType):
 
     check_undirected_graph_variants(graph)
 
-def test_can_add_a_weighted_edge_directed_graph():
-    graph = DirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", DIRECTED_TYPE)
+def test_can_add_a_weighted_edge_directed_graph(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
@@ -127,7 +134,8 @@ def test_can_add_a_weighted_edge_directed_graph():
 
     actual_edges = graph.edges
     assert len(actual_edges) == 1
-    assert (vertex_from, vertex_to, weight) in actual_edges
+    assert actual_edges[0][0:2] == (vertex_from, vertex_to)
+    assert pytest.approx(actual_edges[0][2], weight)
 
 @pytest.mark.parametrize("GraphType", UNDIRECTED_TYPE)
 def test_can_add_an_unweighted_edge_undirected_graph(GraphType):
@@ -149,8 +157,9 @@ def test_can_add_an_unweighted_edge_undirected_graph(GraphType):
 
     check_undirected_graph_variants(graph)
 
-def test_can_add_an_unweighted_edge_directed_graph():
-    graph = DirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", DIRECTED_TYPE)
+def test_can_add_an_unweighted_edge_directed_graph(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
 
@@ -211,8 +220,9 @@ def test_edges_from_simple_undirected(GraphType):
     assert to_vertex_from_edges[0][1] == vertex_from
     assert pytest.approx(to_vertex_from_edges[0][2], weight)
 
-def test_edges_from_simple_directed():
-    graph = DirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", DIRECTED_TYPE)
+def test_edges_from_simple_directed(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
@@ -260,14 +270,18 @@ def test_edges_to_simple_undirected(GraphType):
     assert to_vertex_from_edges[0][1] == vertex_from
     assert pytest.approx(to_vertex_from_edges[0][2], weight)
 
-def test_edges_to_simple_directed():
-    graph = DirectedEdgeListGraph()
+@pytest.mark.parametrize("GraphType", DIRECTED_TYPE)
+def test_edges_to_simple_directed(GraphType):
+    graph = GraphType()
     vertex_from = 1
     vertex_to = 2
     weight = 3.14
     graph.add_edge(vertex_from, vertex_to, weight)
 
-    assert [(vertex_from, vertex_to, weight)] == graph.edges_to(vertex_to)
+    actual_edges = graph.edges_to(vertex_to)
+    assert len(actual_edges) == 1
+    assert (vertex_from, vertex_to) == actual_edges[0][0:2]
+    assert pytest.approx(actual_edges[0][2], weight)
 
 def test_edges_to_complex(construct_graph):
     graph, test_function = construct_graph
